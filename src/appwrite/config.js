@@ -1,6 +1,5 @@
 import conf from '../conf/conf.js';
-import { Client, ID, Databases, Storage, Query } from "appwrite";
-import { Permission, Role } from "appwrite";
+import { Client, ID, Databases, Storage, Query, Permission, Role } from "appwrite";
 
 export class Service {
     client = new Client();
@@ -15,30 +14,35 @@ export class Service {
         this.bucket = new Storage(this.client);
     }
 
-    async createPost(data) {
-        if (!data.featuredImage) {
-            console.error("createPost error: featuredImage is missing", data);
-            return;
-        }
-
-        try {
-            return await this.databases.createDocument(
-                conf.appwriteDatabaseId,
-                conf.appwriteCollectionId,
-                data.slug,
-                {
-                    title: data.title,
-                    content: data.content,
-                    featuredImage: data.featuredImage,
-                    status: data.status,
-                    userId: data.userId,
-                }
-            );
-        } catch (error) {
-            console.error("Appwrite service :: createPost :: error", error);
-            throw error;
-        }
+   
+async createPost(data) {
+    if (!data.featuredImage) {
+        console.error("createPost error: featuredImage is missing", data);
+        return;
     }
+
+    try {
+        return await this.databases.createDocument(
+            conf.appwriteDatabaseId,
+            conf.appwriteCollectionId,
+            data.slug,
+            {
+                title: data.title,
+                content: data.content,
+                featuredImage: data.featuredImage,
+                status: data.status,
+                userId: data.userId,
+            },
+            [
+                Permission.read(Role.user(data.userId)),  // ✅ Allow this user to read
+                Permission.write(Role.user(data.userId)), // ✅ Allow this user to edit/delete
+            ]
+        );
+    } catch (error) {
+        console.error("Appwrite service :: createPost :: error", error);
+        throw error;
+    }
+}
 
     async updatePost(slug, { title, content, featuredImage, status }) {
         try {
@@ -52,9 +56,9 @@ export class Service {
                     featuredImage,
                     status,
                 }
-            )
+            );
         } catch (error) {
-            console.log("Appwrite serive :: updatePost :: error", error);
+            console.log("Appwrite service :: updatePost :: error", error);
         }
     }
 
@@ -64,11 +68,11 @@ export class Service {
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
                 slug
-            )
-            return true
+            );
+            return true;
         } catch (error) {
-            console.log("Appwrite serive :: deletePost :: error", error);
-            return false
+            console.log("Appwrite service :: deletePost :: error", error);
+            return false;
         }
     }
 
@@ -78,10 +82,10 @@ export class Service {
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
                 slug
-            )
+            );
         } catch (error) {
-            console.log("Appwrite serive :: getPost :: error", error);
-            return false
+            console.log("Appwrite service :: getPost :: error", error);
+            return false;
         }
     }
 
@@ -90,51 +94,47 @@ export class Service {
             return await this.databases.listDocuments(
                 conf.appwriteDatabaseId,
                 conf.appwriteCollectionId,
-                queries,
-            )
+                queries
+            );
         } catch (error) {
-            console.log("Appwrite serive :: getPosts :: error", error);
-            return false
+            console.log("Appwrite service :: getPosts :: error", error);
+            return false;
         }
     }
 
- 
     async uploadFile(file) {
         try {
-          return await this.bucket.createFile(
-            conf.appwriteBucketId,
-            ID.unique(),
-            file,
-            [
-              Permission.read(Role.any()) 
-            ]
-          );
+            return await this.bucket.createFile(
+                conf.appwriteBucketId,
+                ID.unique(),
+                file,
+                [Permission.read(Role.any())]
+            );
         } catch (error) {
-          console.error("Appwrite service :: uploadFile :: error", error);
-          return null;
+            console.error("Appwrite service :: uploadFile :: error", error);
+            return null;
         }
-      }
+    }
 
     async deleteFile(fileId) {
         try {
             await this.bucket.deleteFile(
                 conf.appwriteBucketId,
                 fileId
-            )
-            return true
+            );
+            return true;
         } catch (error) {
-            console.log("Appwrite serive :: deleteFile :: error", error);
-            return false
+            console.log("Appwrite service :: deleteFile :: error", error);
+            return false;
         }
     }
 
     getFilePreview(fileId) {
         return this.bucket.getFilePreview(
-          conf.appwriteBucketId,
-          fileId
-        ).toString(); // 👈 Return as string
-      }
-      
+            conf.appwriteBucketId,
+            fileId
+        ).href;
+    }
 }
 
 const service = new Service();

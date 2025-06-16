@@ -1,55 +1,41 @@
-import React, {useEffect, useState} from 'react'
+import React, { useEffect, useState } from "react";
 import appwriteService from "../appwrite/config";
-import {Container, PostCard} from '../components'
+import { Container, PostCard } from "../components";
+import { useSelector } from "react-redux";
+import { Query } from "appwrite";
 
-function Home() {
-    const [posts, setPosts] = useState([])
+export default function Home() {
+    const [posts, setPosts] = useState([]);
+    const userData = useSelector((state) => state.auth.userData);
 
     useEffect(() => {
-        appwriteService.getPosts().then((posts) => {
-            if (posts) {
-                setPosts(posts.documents)
-            }
-        })
-    }, [])
-  
-    if (posts.length === 0) {
-        return (
-            <div className="w-full py-8 mt-4 text-center">
-                <Container>
-                    <div className="flex flex-wrap">
-                        <div className="p-2 w-full">
-                            <h1 className="text-2xl font-bold hover:text-gray-500">
-                                Login to read posts
-                            </h1>
-                        </div>
-                    </div>
-                </Container>
-            </div>
-        )
-    }
+        if (userData?.$id) {
+            appwriteService.getPosts([
+                Query.equal("status", "active"),
+                Query.equal("userId", userData.$id)
+            ]).then((response) => {
+                if (response) {
+                    setPosts(response.documents);
+                }
+            });
+        }
+    }, [userData]);
+
     return (
-        <div className='w-full py-8'>
+        <div className="w-full py-8">
             <Container>
-                <div className='flex flex-wrap'>
-                {posts.map((post) => {
-             console.log("Post:", post); // 👈 Add this
-         return (
-        <div key={post.$id} className='p-2 w-1/4'>
-             <PostCard
-    $id={post.$id}
-    title={post.title}
-    featuredImage={post.featuredImage}
-/>
-
-        </div>
-    );
-})}
-
+                <div className="flex flex-wrap">
+                    {posts.length > 0 ? (
+                        posts.map((post) => (
+                            <div key={post.$id} className="p-2 w-1/4">
+                                <PostCard {...post} />
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500 w-full">No posts found for this user.</p>
+                    )}
                 </div>
             </Container>
         </div>
-    )
+    );
 }
-
-export default Home

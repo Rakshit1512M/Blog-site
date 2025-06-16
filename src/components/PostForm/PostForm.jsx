@@ -35,6 +35,12 @@ export default function PostForm({ post }) {
                 navigate(`/post/${dbPost.$id}`);
             }
         } else {
+            if (!userData || !userData.$id) {
+                console.error("User not logged in or userData is missing");
+                alert("You must be logged in to create a post.");
+                return;
+            }
+        
             if (!data.image || !data.image[0]) {
                 console.error("No image uploaded.");
                 alert("Please upload a featured image.");
@@ -57,14 +63,13 @@ export default function PostForm({ post }) {
                 content: data.content,
                 featuredImage: data.featuredImage,
                 status: data.status,
-                userId: userData.$id,
+                userId: userData.$id, // ✅ Safe now
             });
         
             if (dbPost) {
                 navigate(`/post/${dbPost.$id}`);
             }
         }
-        
         
     };
 
